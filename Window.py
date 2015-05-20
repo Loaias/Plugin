@@ -2,7 +2,7 @@
 
 from PyQt4 import QtGui
 from Base64 import encode_image
-from SocketModule import UDPService, TCPClient
+from SocketModule import Server, Client
 from Modify import render_faces, modify_model
 from core import G
 
@@ -36,12 +36,12 @@ class SocketWindow(QtGui.QWidget):
         self.setLayout(v_box)
 
     def init_remote_module(self):
-        # UDP Server
-        self.receive_server = UDPService(self)
+        # TCP Server
+        self.receive_server = Server(self)
         self.receive_server.trigger.connect(self.received)
         self.receive_server.start()
         # TCP Client
-        self.tcp_client = TCPClient()
+        self.tcp_client = Client()
 
     def switch_click(self):
         text = self.switch.text()
@@ -100,6 +100,25 @@ class SocketWindow(QtGui.QWidget):
             modify_model(human, individual)
 
             models_data.append(human.mesh.__dict__["coord"].tolist())
+
+        command["ReturnData"] = models_data
+
+        self.tcp_client.send_json(str(command))
+
+    def modify_and_get_mappings(self, human, command):
+        models_data = []
+        individuals = command["Individuals"]
+        key_points = command["Parameter"]
+
+        for individual in individuals:
+            modify_model(human, individual)
+
+            models_data.append({
+                "Parameter": individual[0]["Value"],
+                "KeyPoints": [
+                    {'name': c["name"], 'value': human.mesh.__dict__["coord"][c["index"]].tolist()} for c in key_points
+                ]
+            })
 
         command["ReturnData"] = models_data
 

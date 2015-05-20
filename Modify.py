@@ -1,4 +1,6 @@
 # -*- coding: utf8 -*-
+
+import time
 import humanmodifier
 from Render import my_render
 
@@ -12,6 +14,7 @@ def modify_model(human, individual):
         modifier = human.getModifier(feature["Modifier"])
         action = humanmodifier.ModifierAction(modifier, 0, feature["Value"], finished_modify)
         action.do()
+        # time.sleep(0.05)
 
 
 def render_faces(human, individuals):
