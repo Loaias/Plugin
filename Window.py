@@ -1,5 +1,8 @@
 # -*- coding: utf8 -*-
 
+import numpy as np
+
+from Queue import Queue
 from PyQt4 import QtGui
 from Base64 import encode_image
 from SocketModule import Server, Client
@@ -94,14 +97,33 @@ class SocketWindow(QtGui.QWidget):
         self.tcp_client.send_json(str(command))
 
     def modify_and_get_models(self, human, command):
-        models_data = []
+        command["ReturnData"] = []
 
-        for individual in command["Individuals"]:
-            modify_model(human, individual)
+        for part in command["Parts"]:
+            tmp = []
+            for individual in part["Individuals"]:
+                modify_model(human, individual)
+                tmp.append(human.mesh.__dict__["coord"].tolist())
 
-            models_data.append(human.mesh.__dict__["coord"].tolist())
+            models = np.array(tmp)
+            points = []
 
-        command["ReturnData"] = models_data
+            for index, (x, y, z) in enumerate(models[0]):
+                diff = True
+                for (x0, y0, z0) in models[1:, index, :]:
+                    if (x, y, z) == (x0, y0, z0):
+                        diff = False
+                        break
+                if diff:
+                    points.append([index, x, y, z])
+
+            command["ReturnData"].append(
+                {
+                    "Points": points,
+                    "Name": part["ShortName"],
+                    "Count": len(points)
+                }
+            )
 
         self.tcp_client.send_json(str(command))
 
